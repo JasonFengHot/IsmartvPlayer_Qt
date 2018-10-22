@@ -123,15 +123,20 @@ void MainWindow::securityActive(){
         QMessageBox::information(this, "错误", "读取licence文件错误");
     }
 
+    std::cout << "licence: " << licence.toStdString() << std::endl;
+    std::cout << "sn: " << sn.toStdString() << std::endl;
 
-    QAESEncryption encryption(QAESEncryption::AES_128, QAESEncryption::CBC);
-    QByteArray reultByteArray = encryption.decode(licence.toUtf8(), getPositionByte(sn.toUtf8(), 0, 16), getPositionByte(licence.toUtf8(),0, 16));
+    QByteArray licenceResult =   QByteArray::fromBase64(licence.toUtf8(), QByteArray::Base64UrlEncoding);
+
+    QAESEncryption encryption(QAESEncryption::AES_128, QAESEncryption::CBC, QAESEncryption::ZERO);
+
+    QByteArray reultByteArray = encryption.decode(getPositionByte(licenceResult, 16, licenceResult.size()), getPositionByte(sn.toUtf8(), 0, 16), getPositionByte(licenceResult,0, 16));
 
     // 去除填充字符
     QByteArray plainTemp = getPositionByte(reultByteArray, reultByteArray.size() - 1, reultByteArray.size());
-    QByteArray plainTemp2 = getPositionByte(reultByteArray, 0, reultByteArray.size() - (int)0xc3);
+    QByteArray plainTemp2 = getPositionByte(reultByteArray, 0, reultByteArray.size() - (int) plainTemp[0]);
 
-    QString finalResult (plainTemp2);
+    QString finalResult = QString (plainTemp2);
 
     std::cout <<"final result: " << finalResult.toStdString()<< std::endl;
     //        QCOMPARE(encryption.decode(outCBC128, key16, iv), inCBC128);
