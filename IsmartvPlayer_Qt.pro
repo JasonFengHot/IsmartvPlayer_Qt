@@ -28,11 +28,13 @@ CONFIG += c++11
 SOURCES += \
         main.cpp \
         mainwindow.cpp \
-    qaesencryption.cpp
+    qaesencryption.cpp \
+    cipher.cpp
 
 HEADERS += \
         mainwindow.h \
-    qaesencryption.h
+    qaesencryption.h \
+    cipher.h
 
 FORMS += \
         mainwindow.ui
@@ -41,3 +43,19 @@ FORMS += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+
+
+macx: LIBS += -L$$PWD/../../../../usr/local/Cellar/openssl/1.0.2p/lib/ -lcrypto
+
+INCLUDEPATH += $$PWD/../../../../usr/local/Cellar/openssl/1.0.2p/include
+DEPENDPATH += $$PWD/../../../../usr/local/Cellar/openssl/1.0.2p/include
+
+macx: PRE_TARGETDEPS += $$PWD/../../../../usr/local/Cellar/openssl/1.0.2p/lib/libcrypto.a
+
+macx: LIBS += -L$$PWD/../../../../usr/local/Cellar/openssl/1.0.2p/lib/ -lssl
+
+INCLUDEPATH += $$PWD/../../../../usr/local/Cellar/openssl/1.0.2p/include
+DEPENDPATH += $$PWD/../../../../usr/local/Cellar/openssl/1.0.2p/include
+
+macx: PRE_TARGETDEPS += $$PWD/../../../../usr/local/Cellar/openssl/1.0.2p/lib/libssl.a

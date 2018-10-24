@@ -19,6 +19,7 @@ private:
 
     QNetworkAccessManager networkManager;
     QNetworkReply* reply ;
+    QNetworkReply * securityActiveReply;
 
     const QString mSn = "123456";
     const QString mManufacture = "sharp";

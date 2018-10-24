@@ -7,6 +7,9 @@
 #include <QFile>
 #include <QDir>
 #include "qaesencryption.h"
+#include <QtDebug>
+#include <cipher.h>
+#include <QByteArray>
 
 
 
@@ -139,17 +142,74 @@ void MainWindow::securityActive(){
     QString finalResult = QString (plainTemp2);
 
     std::cout <<"final result: " << finalResult.toStdString()<< std::endl;
-    //        QCOMPARE(encryption.decode(outCBC128, key16, iv), inCBC128);
+
+
+    QByteArray append;
+
+    append.append("sn=").append(sn);
+    append.append("&fingerprint=").append( fingerprint);
+    append.append("&manufacture=" ).append( mManufacture);
+    append.append("&kind=").append("uf30");
+    append.append("&version=").append("1");
+    append.append("&api_version=").append("v3_0");
+
+
+    QString sign;
+    sign.append  ("ismartv=201415&kind=uf30&sn=").append(sn);
+
+
+
+    char publicKey2[]="-----BEGIN RSA PUBLIC KEY-----\n"\
+       "MIIBCAKCAQEAppxnlHiDYUtJxwXRiizoZH+xL8BNSsfQiE75qi+1I70LoZawPqCi\n"\
+       "JdeejXdzGJrgM4c2lmxsp4xKMbDlXHtoXEe86E1h2R33R+xHxh5ZQaoM5Znj5PvW\n"\
+       "jmHjdBdciBMlcTHvk+GKpzrpI18dHK9Clzpp6RQ0rHqpPG5Qvn6X4gpStglj6n2L\n"\
+       "tc3lWjDRNTPuS70SRSoBrkMv9YPCMTzJAbXIa7yNS4u8W50Wqt9skCItu/XTKoTC\n"\
+       "/PzceqfrjDJk5SWCDOIey8DAclI62DE3kSLg3+0dinDkm//zLt8Wz0ttythaTl6X\n"\
+       "YapHPPGulUXukeMtWAQV3TfuJ+LxheYVSwIBOw==\n"\
+       "-----END RSA PUBLIC KEY-----";
+
+      QString publicKey(publicKey2);
+
+    //    publicKey.append("-----BEGIN PUBLIC KEY-----");
+    //    publicKey.append( finalResult.split("$$$").at(1));
+    //    publicKey.append("-----END PUBLIC KEY-----");
+
+    qDebug() << "public key: " << publicKey;
+
+    Cipher cipher;
+
+    QByteArray publicKeyByteArray = publicKey.toUtf8();
+
+    RSA * rsaPublicKey = cipher.getPublicKey(publicKeyByteArray);
+//    RSA * rsaPrivateKey = cipher.getPrivateKey("/Users/huibin/private.pem");
+
+    QByteArray signByteArray = sign.toUtf8();
+
+    QByteArray rsaEncryptResult = cipher.encryptRSA(rsaPublicKey, signByteArray);
+//    qDebug() << "RSA ENCRYPT RESULT: " << rsaEncryptResult;
+
+
+    QNetworkRequest request= QNetworkRequest(url);
+
+    // request
+    request.setRawHeader("Content-Type", "application/x-www-form-urlencoded");
+    securityActiveReply = networkManager.post(request, append);
+    connect(securityActiveReply,SIGNAL(finished()), this, SLOT(onsecurityActiveFinish()));
+    connect(securityActiveReply,SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(onsecurityActiveError(QNetworkReply::NetworkError)));
 
 }
 
 void MainWindow::onsecurityActiveFinish(){
+    std::cout << "onsecurityActiveFinish "<< std::endl;
+    QByteArray securityActiveResponse = securityActiveReply->readAll();
+    QString response (securityActiveResponse);
+    qDebug() << response;
 
 }
 
 
 void MainWindow::onsecurityActiveError(QNetworkReply::NetworkError error){
-
+    std::cout << "onsecurityActiveError: " << error << std::endl;
 }
 
 
