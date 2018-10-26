@@ -110,7 +110,7 @@ void MainWindow::securityActive(){
 
     QString fingerprint;
     QByteArray fingerprintByteArray =  QCryptographicHash::hash ( sn.toUtf8(), QCryptographicHash::Md5 );
-    fingerprint.append(fingerprintByteArray);
+    fingerprint.append(fingerprintByteArray.toHex());
 
     QString currentDirPath = QDir::currentPath() + "/licence";
 
@@ -144,6 +144,42 @@ void MainWindow::securityActive(){
     std::cout <<"final result: " << finalResult.toStdString()<< std::endl;
 
 
+
+
+
+    QString sign;
+    sign.append  ("ismartv=201415&kind=uf30&sn=").append(sn);
+
+
+
+//    static const char key[] = "-----BEGIN PUBLIC KEY-----\n"\
+//                              "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDsvk1NWilZ11sJEx0M5dmh9VR0\n"\
+//                              "7M0Zzrwqop17KqtRWOp4OXEyc/Hg6DkoPTD4TPyL2WFkArot9TWpqHINXQwmylRa\n"\
+//                              "hNamwlSmnx9nxCYO6+arCnsWD6AVkeXgq+HFZjI+0nZwKjIy3Y21mFiyHKdo5Esa\n"\
+//                              "O/Zq6o3yCF4G14VQiQIDAQAB\n"\
+//                              "-----END PUBLIC KEY-----\n";
+
+    QString publicKey;
+
+            publicKey.append("-----BEGIN PUBLIC KEY-----");
+            publicKey.append( finalResult.split("$$$").at(1));
+            publicKey.append("-----END PUBLIC KEY-----");
+
+
+    Cipher cipher;
+
+    QByteArray publicKeyByteArray = publicKey.toUtf8();
+
+    RSA * rsaPublicKey = cipher.getPublicKey(publicKeyByteArray);
+    //    RSA * rsaPrivateKey = cipher.getPrivateKey("/Users/huibin/private.pem");
+
+    QByteArray signByteArray = QCryptographicHash::hash ( sign.toUtf8(), QCryptographicHash::Md5 );
+
+    QByteArray rsaEncryptResult = cipher.encryptRSA(rsaPublicKey, signByteArray);
+    QString rsaEncryptResultString = rsaEncryptResult.toBase64();
+    qDebug() << "RSA ENCRYPT RESULT: " << rsaEncryptResultString;
+
+
     QByteArray append;
 
     append.append("sn=").append(sn);
@@ -152,42 +188,13 @@ void MainWindow::securityActive(){
     append.append("&kind=").append("uf30");
     append.append("&version=").append("1");
     append.append("&api_version=").append("v3_0");
+    //    append.append("&sign=").append(rsaEncryptResultString);
+    append.append("&sign=").append(rsaEncryptResultString);
 
+    QString info  = "{\"fingerprintE\":\"ecacf77e6480b76e8e3c4f2869fe779a\",\"fingerprintD\":\"HUAWEIBKL-AL20\\/\\/TUKDU18108010250\",\"versionName\":\"1.0\",\"serial\":\"TUKDU18108010250\",\"deviceId\":\"868341030203250\"}///null";
+    append.append("&info=").append(info);
 
-    QString sign;
-    sign.append  ("ismartv=201415&kind=uf30&sn=").append(sn);
-
-
-
-    char publicKey2[]="-----BEGIN RSA PUBLIC KEY-----\n"\
-       "MIIBCAKCAQEAppxnlHiDYUtJxwXRiizoZH+xL8BNSsfQiE75qi+1I70LoZawPqCi\n"\
-       "JdeejXdzGJrgM4c2lmxsp4xKMbDlXHtoXEe86E1h2R33R+xHxh5ZQaoM5Znj5PvW\n"\
-       "jmHjdBdciBMlcTHvk+GKpzrpI18dHK9Clzpp6RQ0rHqpPG5Qvn6X4gpStglj6n2L\n"\
-       "tc3lWjDRNTPuS70SRSoBrkMv9YPCMTzJAbXIa7yNS4u8W50Wqt9skCItu/XTKoTC\n"\
-       "/PzceqfrjDJk5SWCDOIey8DAclI62DE3kSLg3+0dinDkm//zLt8Wz0ttythaTl6X\n"\
-       "YapHPPGulUXukeMtWAQV3TfuJ+LxheYVSwIBOw==\n"\
-       "-----END RSA PUBLIC KEY-----";
-
-      QString publicKey(publicKey2);
-
-    //    publicKey.append("-----BEGIN PUBLIC KEY-----");
-    //    publicKey.append( finalResult.split("$$$").at(1));
-    //    publicKey.append("-----END PUBLIC KEY-----");
-
-    qDebug() << "public key: " << publicKey;
-
-    Cipher cipher;
-
-    QByteArray publicKeyByteArray = publicKey.toUtf8();
-
-    RSA * rsaPublicKey = cipher.getPublicKey(publicKeyByteArray);
-//    RSA * rsaPrivateKey = cipher.getPrivateKey("/Users/huibin/private.pem");
-
-    QByteArray signByteArray = sign.toUtf8();
-
-    QByteArray rsaEncryptResult = cipher.encryptRSA(rsaPublicKey, signByteArray);
-//    qDebug() << "RSA ENCRYPT RESULT: " << rsaEncryptResult;
-
+    qDebug() << "request body: " << append;
 
     QNetworkRequest request= QNetworkRequest(url);
 
@@ -200,10 +207,21 @@ void MainWindow::securityActive(){
 }
 
 void MainWindow::onsecurityActiveFinish(){
-    std::cout << "onsecurityActiveFinish "<< std::endl;
     QByteArray securityActiveResponse = securityActiveReply->readAll();
     QString response (securityActiveResponse);
-    qDebug() << response;
+    qDebug() <<"onsecurityActiveFinish"<< response;
+    qDebug() << securityActiveReply->rawHeaderPairs();
+
+
+    QVariant statusCode = securityActiveReply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
+    int status = statusCode.toInt();
+    qDebug() << "response code: " << status;
+
+    //    if ( status != 200 )
+    //    {
+    //        QString reason = securityActiveReply->attribute( QNetworkRequest::HttpReasonPhraseAttribute ).toString();
+    //        qDebug() << reason;
+    //    }
 
 }
 

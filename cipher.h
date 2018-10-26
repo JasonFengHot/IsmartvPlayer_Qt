@@ -24,7 +24,7 @@ public:
     ~Cipher();
 
 public:
-    RSA * getPublicKey(QByteArray &data);
+    RSA * getPublicKey(QByteArray data);
     RSA * getPublicKey(QString fileName);
 
     RSA * getPrivateKey(QByteArray &data);

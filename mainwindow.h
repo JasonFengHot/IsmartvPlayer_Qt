@@ -21,7 +21,7 @@ private:
     QNetworkReply* reply ;
     QNetworkReply * securityActiveReply;
 
-    const QString mSn = "123456";
+    const QString mSn = "noaddress11";
     const QString mManufacture = "sharp";
     const QString mKind = "uf30";
 

@@ -1,5 +1,6 @@
 #include "cipher.h"
 #include <QtDebug>
+#include <iostream>
 
 Cipher::Cipher(QObject *parent) : QObject(parent)
 {
@@ -7,16 +8,51 @@ Cipher::Cipher(QObject *parent) : QObject(parent)
 }
 
 
-RSA * Cipher::getPublicKey(QByteArray &data){
-    const char * publicKeyStr = data.constData();
-    BIO * bio = BIO_new_mem_buf((void*) publicKeyStr, -1);
+RSA * Cipher::getPublicKey(QByteArray data){
 
-    BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
 
-    RSA  *rsaPubKey = PEM_read_bio_RSAPublicKey(bio, NULL, NULL, NULL);
-    if(!rsaPubKey){
-        qCritical() << "Could not load public key" << ERR_error_string(ERR_get_error(), NULL);
+    int size =data.size();
+
+    char key[size + 1];
+
+    for(int i = 0; i< data.size(); i++){
+        key[i] = data.at(i);
     }
+    key[size] = '\0';
+
+    std::cout << "public key from file: " << key << std::endl;
+    BIO * bio = BIO_new_mem_buf( key, (int) sizeof(key) );
+    if (!bio) {
+        std::cout << "Could not load public key" << ERR_error_string(ERR_get_error(), NULL) << std::endl;
+    }
+
+    EVP_PKEY* pkey = PEM_read_bio_PUBKEY(bio, NULL, NULL, NULL);
+
+    if (!pkey) {
+        std::cout << "Could not load public key" << ERR_error_string(ERR_get_error(), NULL) << std::endl;
+    }
+
+    //    int type = EVP_PKEY_get_type
+
+    RSA* rsaPubKey = EVP_PKEY_get1_RSA(pkey);
+    if (!rsaPubKey) {
+        std::cout << "Could not load public key" << ERR_error_string(ERR_get_error(), NULL) << std::endl;
+    }
+
+    //    const char * publicKeyStr = data.constData();
+    //    BIO * bio = BIO_new_mem_buf((void*) publicKeyStr, (int)sizeof(publicKeyStr));
+
+    ////    BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
+
+    //    EVP_PKEY  *evpKey = PEM_read_bio_PUBKEY(bio, NULL, NULL, NULL);
+    //    if(!evpKey){
+    //        qCritical() << "Could not PEM_read_bio_PUBKEY" << ERR_error_string(ERR_get_error(), NULL);
+    //    }
+
+    //    RSA * rsaPubKey = EVP_PKEY_get1_RSA(evpKey);
+    //    if(!rsaPubKey){
+    //        qCritical() << "Could not load public key" << ERR_error_string(ERR_get_error(), NULL);
+    //    }
     BIO_free(bio);
     return rsaPubKey;
 }
@@ -55,7 +91,7 @@ QByteArray Cipher::encryptRSA(RSA * key, QByteArray &data){
     int rsaLen = RSA_size(key);
     unsigned char* ed = (unsigned char *) malloc(rsaLen);
 
-    int resultLen = RSA_public_encrypt(dataSize, (const unsigned char*)str, ed, key, PADDING);
+    int resultLen = RSA_public_encrypt(dataSize, (const unsigned char*)str, ed, key, RSA_X931_PADDING);
 
     if(resultLen == -1){
         qCritical() << "Could not encrypt: " << ERR_error_string(ERR_get_error(), NULL);
